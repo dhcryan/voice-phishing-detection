@@ -42,10 +42,39 @@ LAW_DATA = [
     }
 ]
 
-def main():
-    print(f"Ingesting {len(LAW_DATA)} legal documents into RAG system...")
+def load_external_data(file_path: str):
+    """Load legal data from an external JSON file."""
+    if not os.path.exists(file_path):
+        return None
     try:
-        legal_rag.ingest_documents(LAW_DATA)
+        import json
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            # Validate structure roughly
+            if isinstance(data, list) and len(data) > 0 and "text" in data[0]:
+                return data
+            else:
+                print(f"Warning: Invalid format in {file_path}. Expected a list of objects with 'text' field.")
+                return None
+    except Exception as e:
+        print(f"Error loading external data from {file_path}: {e}")
+        return None
+
+def main():
+    # 1. Try to load real data from data/raw/laws.json
+    external_data_path = os.path.join(Path(__file__).parent.parent, "data/raw/laws.json")
+    data_to_ingest = load_external_data(external_data_path)
+    
+    if data_to_ingest:
+        print(f"Found external legal data at {external_data_path}")
+        print(f"Ingesting {len(data_to_ingest)} documents...")
+    else:
+        print("External data not found or invalid. Using default sample data...")
+        data_to_ingest = LAW_DATA
+        print(f"Ingesting {len(data_to_ingest)} sample documents...")
+
+    try:
+        legal_rag.ingest_documents(data_to_ingest)
         print("Successfully built RAG database.")
         print(f"Database location: {os.path.abspath('data/chromadb')}")
     except Exception as e:

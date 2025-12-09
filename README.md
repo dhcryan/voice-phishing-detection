@@ -395,9 +395,30 @@ export LANGFUSE_SECRET_KEY="sk-..."
 #### 4.2. 법률 데이터베이스 구축
 기본 제공되는 스크립트를 실행하여 법률 벡터 데이터베이스를 생성합니다.
 
+**옵션 A: 샘플 데이터 사용 (기본)**
+별도의 데이터 다운로드 없이 기본 내장된 핵심 법령(형법, 통신사기피해환급법 등)을 사용합니다.
 ```bash
 python scripts/build_rag_db.py
 ```
+
+**옵션 B: 실제 법령 데이터 사용 (권장)**
+1. [Open Law (열린법령)](https://open.law.go.kr/) 또는 [AI Hub](https://aihub.or.kr/)에서 법률 데이터를 다운로드합니다.
+2. 다운로드한 데이터를 아래와 같은 JSON 형식으로 변환하여 `data/raw/laws.json`에 저장합니다.
+    ```json
+    [
+      {
+        "id": "law_1",
+        "text": "제1조(목적) 이 법은...",
+        "metadata": {"source": "형법", "article": "제1조"}
+      },
+      ...
+    ]
+    ```
+3. 스크립트를 실행하면 자동으로 해당 파일을 로드하여 DB를 구축합니다.
+    ```bash
+    python scripts/build_rag_db.py
+    ```
+
 이 명령어를 실행하면 `data/chromadb` 폴더에 벡터 DB가 생성되며, 이후 서버 실행 시 자동으로 로드됩니다.
 
 ---
