@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     SUPPORTED_AUDIO_FORMATS: List[str] = Field(default=["wav", "mp3", "flac", "ogg", "m4a"])
     
     # === Detection Models ===
-    DETECTION_MODEL_TYPE: str = Field(default="aasist")  # aasist, rawnet2, ecapa, wav2vec2
-    DETECTION_MODEL_PATH: str = Field(default="models/checkpoints")
+    DETECTION_MODEL_TYPE: str = Field(default="simple")  # aasist, rawnet2, ecapa, simple
+    DETECTION_MODEL_PATH: str = Field(default="checkpoints/simple_detector_best.pt")
     DETECTION_BATCH_SIZE: int = Field(default=8)
     DETECTION_THRESHOLD: float = Field(default=0.5)
     

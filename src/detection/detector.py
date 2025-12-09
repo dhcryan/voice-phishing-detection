@@ -118,6 +118,125 @@ class BaseDetector(ABC):
         self.model_path = model_path
         self.model = None
         self.preprocessor = AudioPreprocessor()
+        self.model_name = "base"
+
+    @abstractmethod
+    def load_model(self):
+        """Load model weights"""
+        pass
+    
+    @abstractmethod
+    def predict(self, audio_path: str) -> DetectionResult:
+        """Run prediction"""
+        pass
+    
+    def to_tensor(self, waveform: np.ndarray) -> torch.Tensor:
+        """Convert waveform to tensor"""
+        return torch.from_numpy(waveform).unsqueeze(0).to(self.device)
+
+
+class SimpleDetector(nn.Module):
+    """간단한 CNN 기반 탐지기 (테스트용)"""
+    
+    def __init__(self, input_samples: int = 64000):
+        super().__init__()
+        
+        self.conv = nn.Sequential(
+            nn.Conv1d(1, 32, kernel_size=251, stride=1, padding=125),
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+            nn.MaxPool1d(4),
+            
+            nn.Conv1d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.MaxPool1d(4),
+            
+            nn.Conv1d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool1d(1)
+        )
+        
+        self.fc = nn.Sequential(
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(64, 1)
+        )
+    
+    def forward(self, x):
+        # x: (batch, samples) -> (batch, 1, samples)
+        if x.dim() == 2:
+            x = x.unsqueeze(1)
+        
+        x = self.conv(x)  # (batch, 128, 1)
+        x = x.squeeze(-1)  # (batch, 128)
+        x = self.fc(x)  # (batch, 1)
+        
+        return x
+
+
+class SimpleTestDetector(BaseDetector):
+    """Simple CNN Detector for testing pipeline"""
+    
+    def __init__(self, model_path: Optional[str] = None, device: str = "cuda"):
+        super().__init__(model_path, device)
+        self.model_name = "simple_cnn"
+        
+    def load_model(self):
+        self.model = SimpleDetector().to(self.device)
+        
+        if self.model_path and Path(self.model_path).exists():
+            try:
+                state_dict = torch.load(self.model_path, map_location=self.device)
+                self.model.load_state_dict(state_dict)
+                logger.info(f"Loaded SimpleDetector weights from {self.model_path}")
+            except Exception as e:
+                logger.error(f"Failed to load weights: {e}")
+        else:
+            logger.warning(f"Model path {self.model_path} not found, using random weights")
+        
+        self.model.eval()
+        
+    def predict(self, audio_path: str) -> DetectionResult:
+        import time
+        start_time = time.time()
+        
+        # Load audio
+        waveform, sr = self.preprocessor.load_audio(audio_path)
+        acoustic_features = self.preprocessor.extract_acoustic_features(waveform)
+        
+        # Prepare input (fixed length for simple model)
+        target_len = 64000  # 4 seconds
+        if len(waveform) > target_len:
+            waveform = waveform[:target_len]
+        else:
+            waveform = np.pad(waveform, (0, target_len - len(waveform)))
+            
+        waveform_tensor = torch.from_numpy(waveform).unsqueeze(0).to(self.device)
+        
+        with torch.no_grad():
+            logits = self.model(waveform_tensor).squeeze()
+            fake_prob = torch.sigmoid(logits).item()
+            
+        is_fake = fake_prob > 0.5
+        confidence = max(fake_prob, 1 - fake_prob)
+        
+        processing_time = (time.time() - start_time) * 1000
+        
+        return DetectionResult(
+            is_fake=is_fake,
+            fake_probability=fake_prob,
+            confidence=confidence,
+            model_name=self.model_name,
+            processing_time_ms=processing_time,
+            raw_scores={
+                "fake_score": fake_prob,
+                **acoustic_features
+            },
+            embeddings=None
+        )
         
     @abstractmethod
     def load_model(self):
@@ -149,6 +268,11 @@ class SincConv(nn.Module):
         min_band_hz: float = 50
     ):
         super().__init__()
+        
+        # Ensure odd kernel size for symmetry
+        if kernel_size % 2 == 0:
+            kernel_size = kernel_size + 1
+            
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.sample_rate = sample_rate
@@ -662,6 +786,7 @@ def get_detector(model_type: str, model_path: Optional[str] = None, device: str 
         "aasist": AASISTDetector,
         "rawnet2": RawNet2Detector,
         "ecapa": ECAPATDNNDetector,
+        "simple": SimpleTestDetector,
     }
     
     if model_type not in detectors:
