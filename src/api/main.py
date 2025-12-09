@@ -38,19 +38,17 @@ class DetectionRequest(BaseModel):
 
 
 class DetectionResponse(BaseModel):
-    request_id: str
+    filename: str
     is_fake: bool
+    confidence: float
     fake_probability: float
     risk_level: str
-    risk_level_label: str
     risk_score: float
-    watermark_detected: bool
-    watermark_confidence: float
-    model_used: str
-    recommendations: List[str]
-    contributing_factors: List[Dict[str, Any]]
     processing_time_ms: float
-    timestamp: str
+    model_used: str
+    watermark_detected: bool
+    explanation: Optional[str] = None
+    legal_references: Optional[List[str]] = None
 
 
 class RAGQueryRequest(BaseModel):
@@ -282,38 +280,61 @@ async def detect_fake_voice(
                 pass
         
         # Risk assessment
-        risk_assessment = state.risk_scorer.assess_risk(
+        from src.analysis.risk import risk_scorer
+        risk_result = risk_scorer.calculate_risk(
             fake_probability=fake_prob,
             watermark_detected=watermark_detected,
-            watermark_confidence=watermark_confidence,
-            acoustic_features=acoustic_features
+            acoustic_anomalies={"anomaly_score": 0.0} # Placeholder for now
         )
         
+        # RAG & LLM Explanation
+        explanation = ""
+        legal_docs = []
+        
+        try:
+            from src.rag.engine import legal_rag
+            from src.llm.service import llm_service
+            
+            # Retrieve relevant laws based on risk level
+            query = "보이스피싱 처벌 및 피해 구제 절차"
+            if risk_result["level"] == "HIGH":
+                query += " 사기죄 형량 전기통신금융사기 피해금 환급"
+            
+            legal_docs = legal_rag.retrieve(query)
+            
+            # Generate explanation
+            explanation = llm_service.generate_explanation(
+                detection_result={
+                    "is_fake": fake_prob > 0.5,
+                    "confidence": max(fake_prob, 1-fake_prob),
+                    "risk_score": risk_result["level"]
+                },
+                legal_context=legal_docs
+            )
+        except Exception as e:
+            print(f"RAG/LLM Error: {e}")
+            explanation = "상세 분석 정보를 생성하는 도중 오류가 발생했습니다."
+
         # Record metrics
         if state.metrics:
             state.metrics.record_request(success=True)
             state.metrics.record_latency("detection", detection_time)
-            state.metrics.record_risk_level(risk_assessment.risk_level.value)
+            # state.metrics.record_risk_level(risk_result["level"]) # Update metrics class later
         
         total_time = (time.time() - start_time) * 1000
         
-        if state.metrics:
-            state.metrics.record_latency("total", total_time)
-        
         return DetectionResponse(
-            request_id=request_id,
-            is_fake=fake_prob > settings.DETECTION_THRESHOLD,
+            filename=file.filename,
+            is_fake=fake_prob > 0.5,
+            confidence=max(fake_prob, 1-fake_prob),
             fake_probability=fake_prob,
-            risk_level=risk_assessment.risk_level.value,
-            risk_level_label=get_risk_label(risk_assessment.risk_level),
-            risk_score=risk_assessment.risk_score,
-            watermark_detected=watermark_detected,
-            watermark_confidence=watermark_confidence,
-            model_used=model_name,
-            recommendations=risk_assessment.recommendations,
-            contributing_factors=risk_assessment.contributing_factors,
+            risk_level=risk_result["level"],
+            risk_score=risk_result["score"],
             processing_time_ms=total_time,
-            timestamp=datetime.now().isoformat()
+            model_used=model_name,
+            watermark_detected=watermark_detected,
+            explanation=explanation,
+            legal_references=[doc["text"][:50]+"..." for doc in legal_docs]
         )
         
     finally:

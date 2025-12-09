@@ -213,14 +213,16 @@ voice-phishing-detection/
 │   │   └── watermark.py     # AudioSeal 워터마크 탐지
 │   ├── rag/                  # 법률 RAG 시스템
 │   │   ├── __init__.py
-│   │   └── legal_rag.py     # 문서 로드, 벡터 검색, 생성
-│   ├── scoring/              # 리스크 스코어링
+│   │   └── engine.py        # ChromaDB 벡터 검색 엔진
+│   ├── llm/                  # LLM 서비스
 │   │   ├── __init__.py
-│   │   └── risk_scorer.py   # 멀티시그널 융합
+│   │   └── service.py       # OpenAI & Langfuse 연동
+│   ├── analysis/             # 분석 및 스코어링
+│   │   ├── __init__.py
+│   │   └── risk.py          # 리스크 스코어링 로직
 │   ├── utils/                # 유틸리티
 │   │   ├── __init__.py
-│   │   ├── monitoring.py    # Langfuse 연동
-│   │   └── security.py      # 보안 (인젝션 탐지, PII 필터)
+│   │   └── monitoring.py    # 모니터링 도구
 │   └── config.py             # 설정 및 프롬프트
 ├── frontend/
 │   └── app.py                # Streamlit UI
@@ -376,6 +378,27 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8001
 export API_URL="http://localhost:8001"
 streamlit run frontend/app.py --server.port 8501
 ```
+
+### 4. RAG 및 LLM 설정 (선택 사항)
+
+법률 자문 및 상세 분석 기능을 사용하려면 추가 설정이 필요합니다.
+
+#### 4.1. API 키 설정
+`.env` 파일을 생성하거나 `src/config.py`를 수정하여 API 키를 입력하세요.
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export LANGFUSE_PUBLIC_KEY="pk-..."
+export LANGFUSE_SECRET_KEY="sk-..."
+```
+
+#### 4.2. 법률 데이터베이스 구축
+기본 제공되는 스크립트를 실행하여 법률 벡터 데이터베이스를 생성합니다.
+
+```bash
+python scripts/build_rag_db.py
+```
+이 명령어를 실행하면 `data/chromadb` 폴더에 벡터 DB가 생성되며, 이후 서버 실행 시 자동으로 로드됩니다.
 
 ---
 

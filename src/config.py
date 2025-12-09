@@ -48,6 +48,17 @@ class Settings(BaseSettings):
     LLM_MODEL: str = Field(default="gpt-4o-mini")
     LLM_TEMPERATURE: float = Field(default=0.1)
     LLM_MAX_TOKENS: int = Field(default=2048)
+    
+    # === Langfuse Monitoring ===
+    LANGFUSE_PUBLIC_KEY: str = Field(default="")
+    LANGFUSE_SECRET_KEY: str = Field(default="")
+    LANGFUSE_HOST: str = Field(default="https://cloud.langfuse.com")
+    
+    # === RAG Settings ===
+    RAG_VECTOR_DB_PATH: str = Field(default="data/chromadb")
+    RAG_COLLECTION_NAME: str = Field(default="legal_docs")
+    RAG_EMBEDDING_MODEL: str = Field(default="text-embedding-3-small")
+    RAG_TOP_K: int = Field(default=3)
     LLM_TIMEOUT: int = Field(default=60)
     
     # === RAG Settings ===
