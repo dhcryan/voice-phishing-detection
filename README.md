@@ -330,3 +330,66 @@ MIT License
 ## 📞 문의
 
 프로젝트에 대한 질문이나 제안은 Issue를 통해 남겨주세요.
+
+---
+
+## 🚀 개발자 매뉴얼 (Developer Manual)
+
+이 프로젝트를 클론하고 실행하기 위한 단계별 가이드입니다.
+
+### 1. 환경 설정
+
+```bash
+# 저장소 클론
+git clone <repository-url>
+cd voice-phishing-detection
+
+# 가상환경 생성 및 활성화
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# venv\Scripts\activate  # Windows
+
+# 의존성 설치
+pip install -r requirements.txt
+```
+
+### 2. 모델 학습 (Quick Start)
+
+실제 데이터셋(ASVspoof 등)이 없는 경우, 합성 데이터를 생성하여 빠르게 모델을 학습시킬 수 있습니다.
+
+```bash
+# 합성 데이터 생성 및 Simple CNN 모델 학습
+python scripts/quick_train.py
+```
+위 명령어를 실행하면 `checkpoints/simple_detector_best.pt` 모델이 생성됩니다.
+
+### 3. 서버 실행
+
+기본적으로 API 서버는 8001 포트, 웹 인터페이스는 8501 포트를 사용합니다.
+
+```bash
+# 1. API 서버 실행 (Port 8001)
+uvicorn src.api.main:app --host 0.0.0.0 --port 8001
+
+# 2. 웹 인터페이스 실행 (Port 8501)
+# 새 터미널에서 실행하세요
+export API_URL="http://localhost:8001"
+streamlit run frontend/app.py --server.port 8501
+```
+
+---
+
+## 📥 향후 작업 및 데이터셋 다운로드
+
+현재 시스템은 합성 데이터를 기반으로 작동합니다. 실제 보이스피싱 탐지 성능을 확보하기 위해 다음 작업이 필요합니다.
+
+### 1. 필수 데이터셋 다운로드
+다음 데이터셋을 다운로드하여 `data/raw/` 폴더에 위치시켜야 합니다.
+- **ASVspoof 2019 LA**: [다운로드 링크](https://datashare.ed.ac.uk/handle/10283/3336)
+- **WaveFake**: [Kaggle 링크](https://www.kaggle.com/datasets/testing123/wavefake)
+- **In-the-wild**: 실제 보이스피싱 사례 데이터
+
+### 2. 추가 개발 필요 사항
+- [ ] **실제 데이터 학습**: `scripts/train_model.py`를 사용하여 대규모 데이터셋 학습 수행
+- [ ] **RAG 벡터 DB 구축**: 법률 문서 데이터베이스 구축 및 임베딩 (ChromaDB/FAISS)
+- [ ] **모델 고도화**: RawNet2, AASIST 모델의 하이퍼파라미터 튜닝
