@@ -413,14 +413,14 @@ python scripts/build_rag_db.py
 - **ASVspoof 2019 LA**: [University of Edinburgh DataShare](https://datashare.ed.ac.uk/handle/10283/3336)
     - 설명: 안티스푸핑 연구의 표준 벤치마크 데이터셋 (Logical Access)
     - 파일명: `LA.zip`
-- **WaveFake**: [Kaggle Dataset](https://www.kaggle.com/datasets/testing123/wavefake)
-    - 설명: 최신 TTS/VC 아키텍처로 생성된 딥페이크 오디오
+- **WaveFake**: [Zenodo Repository](https://zenodo.org/record/5642694)
+    - 설명: 최신 TTS/VC 아키텍처로 생성된 딥페이크 오디오 (공식 데이터셋)
 - **In-the-wild (실제 보이스피싱)**: [금융감독원 보이스피싱 지킴이](https://www.fss.or.kr/fss/bbs/B0000203/list.do?menuNo=200690)
     - 설명: '그놈 목소리' 등 실제 사기범의 목소리 샘플 (체험관/피해사례)
 
 #### ⚖️ 법률 RAG 데이터셋
-- **국가법령정보센터 Open API**: [Open API 신청 페이지](https://www.law.go.kr/LSW/openApi/guide.do)
-    - 설명: 대한민국 현행 법령 및 판례 데이터
+- **국가법령정보센터 Open API**: [Open Law (열린법령)](https://open.law.go.kr/)
+    - 설명: 대한민국 현행 법령 및 판례 데이터 API 신청 및 가이드
     - 주요 키워드: `형법`, `전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법`, `전자금융거래법`
 - **AI Hub 법률 텍스트**: [법률 규정 (판결서 약관 등) 텍스트 분석 데이터](https://aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&aihubDataSe=realm&dataSetSn=580)
     - 설명: 법률 질의응답 및 요약 모델 학습용 데이터
