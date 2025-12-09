@@ -411,8 +411,10 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8001
 # 2. 웹 인터페이스 실행 (Port 8501)
 # 새 터미널에서 실행하세요
 export API_URL="http://localhost:8001"
-streamlit run frontend/app.py --server.port 8501
+streamlit run frontend/app.py --server.port 8501 --server.fileWatcherType none
 ```
+
+> **참고**: `inotify watch limit reached` 에러가 발생할 경우 `--server.fileWatcherType none` 옵션을 추가하여 파일 감시 기능을 끄고 실행하세요.
 
 ### 4. RAG 및 LLM 설정 (선택 사항)
 
