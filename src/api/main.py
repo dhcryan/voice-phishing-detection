@@ -321,7 +321,7 @@ async def detect_fake_voice(
         if state.metrics:
             state.metrics.record_request(success=True)
             state.metrics.record_latency("detection", detection_time)
-            # state.metrics.record_risk_level(risk_result["level"]) # Update metrics class later
+            state.metrics.record_risk_level(risk_result["level"]) # Update metrics class later
         
         total_time = (time.time() - start_time) * 1000
         

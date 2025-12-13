@@ -498,7 +498,7 @@ class LegalRAG:
 4. 피해자 보호와 구제를 최우선으로 고려하세요.
 5. 불확실한 내용은 전문가 상담을 권고하세요."""
 
-        user_prompt = f"""## 탐지 컨텍스트
+        user_prompt = """## 탐지 컨텍스트
 - 리스크 레벨: {risk_level}
 - 탐지 결과 요약: {detection_summary}
 
@@ -509,21 +509,34 @@ class LegalRAG:
 {query}
 
 ## 요청사항
-위 법령을 참조하여 질문에 답변하세요. 반드시 관련 조항을 인용하고, 구체적인 대응 절차를 안내하세요."""
+위 법령을 참조하여 질문에 답변하세요. 반드시 관련 법령을 인용하고, 구체적인 대응 절차를 안내하세요."""
 
-        client = self._get_openai_client()
-        response = client.chat.completions.create(
-            model=self.llm_model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
+        from langchain_core.prompts import ChatPromptTemplate
+        from langchain_openai import ChatOpenAI
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", user_prompt)
+        ])
+
+        llm = ChatOpenAI(
+            model=self.llm_model,  # 또는 gpt-4.1, gpt-4o 등
             temperature=self.temperature,
-            max_tokens=2048
         )
+        rag_chain = (
+            prompt | llm      # LLM 호출
+        ).with_config({"tags": ["voicephishing", risk_level, "rag"], "run_name": "run-voice-phishing-detection"})
+        chain_result = rag_chain.invoke({
+            "risk_level": risk_level,
+            "detection_summary": detection_summary,
+            "context": context,
+            "query": query
+        })
+        print("@"*88)
+        print(chain_result.content)
+        print("@"*88)
         
-        answer = response.choices[0].message.content
-        tokens_used = response.usage.total_tokens
+        answer = chain_result.content
+        tokens_used = chain_result.response_metadata["token_usage"]["total_tokens"]
         
         return answer, tokens_used
     

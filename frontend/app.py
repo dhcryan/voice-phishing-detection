@@ -147,6 +147,8 @@ def main():
                                 st.error(f"분석 실패: {response.text}")
                                 
                         except requests.exceptions.ConnectionError:
+                            import traceback
+                            traceback.print_exc()
                             st.error("API 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.")
                             # Demo result for testing
                             st.session_state["detection_result"] = create_demo_result()
@@ -303,6 +305,8 @@ def main():
                         st.error(f"오류: {response.text}")
                         
                 except requests.exceptions.ConnectionError:
+                    import traceback
+                    traceback.print_exc()
                     st.error("API 서버에 연결할 수 없습니다.")
                     st.session_state["legal_response"] = create_demo_legal_response(question)
                     st.info("데모 응답을 표시합니다.")
