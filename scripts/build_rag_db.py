@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.rag.engine import legal_rag
+from src.utils.chunking import split_record_text_only
 
 # Sample legal data related to Voice Phishing (Telecommunications-based Financial Fraud)
 # In a real scenario, this would be fetched from the National Law Information Center API
@@ -48,21 +49,38 @@ def load_external_data(file_path: str):
         return None
     try:
         import json
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            # Validate structure roughly
-            if isinstance(data, list) and len(data) > 0 and "text" in data[0]:
-                return data
-            else:
-                print(f"Warning: Invalid format in {file_path}. Expected a list of objects with 'text' field.")
-                return None
+        data_list = []
+        data_dict = {}
+        data = []
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                data_list.append( json.loads(line) )
+
+        # id 중복 처리
+        data_ids_set = set([doc["id"] for doc in data_list])
+        for d in data_list:
+            if data_dict.get(d["id"]) is None:
+                data_dict[d["id"]] = d
+                # 청킹
+                chunked_data = split_record_text_only(d, chunk_tokens=1500, overlap_tokens=250)
+                data = data + chunked_data
+        
+        print(f"chunked result: {len(data_ids_set)} -> {len(data)}")
+
+        if isinstance(data, list) and len(data) > 0 and "text" in data[0]:
+            return data
+        else:
+            print(f"Warning: Invalid format in {file_path}. Expected a list of objects with 'text' field.")
+            return None
     except Exception as e:
         print(f"Error loading external data from {file_path}: {e}")
         return None
 
 def main():
     # 1. Try to load real data from data/raw/laws.json
-    external_data_path = os.path.join(Path(__file__).parent.parent, "data/raw/laws.json")
+    # data/lawopendata/law_rag_voicephishing.jsonl
+    # data/raw/laws.json
+    external_data_path = os.path.join(Path(__file__).parent.parent, "data/lawopendata/law_rag_voicephishing.jsonl")
     data_to_ingest = load_external_data(external_data_path)
     
     if data_to_ingest:

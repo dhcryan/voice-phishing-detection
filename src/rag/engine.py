@@ -43,11 +43,15 @@ class LegalRAG:
         ids = [doc["id"] for doc in documents]
         documents_text = [doc["text"] for doc in documents]
         metadatas = [doc.get("metadata", {}) for doc in documents]
-        
-        self.collection.upsert(
-            ids=ids,
-            documents=documents_text,
-            metadatas=metadatas
+
+        # 크로마디비 배치 업서트
+        from tqdm import tqdm
+        BATCH_SIZE = 10
+        for i in tqdm(range(0, len(ids), BATCH_SIZE)):
+            self.collection.upsert(
+                ids=ids[i:i+BATCH_SIZE],
+                documents=documents_text[i:i+BATCH_SIZE],
+                metadatas=metadatas[i:i+BATCH_SIZE]
         )
         logger.info(f"Ingested {len(documents)} documents into RAG system.")
 
