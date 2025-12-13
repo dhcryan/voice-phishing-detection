@@ -552,6 +552,7 @@ class LegalRAG:
                 "id": meta.get("source_record_id"),
                 "title": meta.get("law_name_ko"),
                 "article_title": meta.get("article_title", "unknown"),
+                "raw": doc
                 # "relevance_score": score
             })
         

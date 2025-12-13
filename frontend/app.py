@@ -319,8 +319,8 @@ def main():
             # Sources
             st.markdown("### 📚 참조 법령")
             for source in response.get("sources", []):
-                with st.expander(f"📖 {source.get('title', 'Unknown')} (관련도: {source.get('relevance_score', 0):.1%})"):
-                    st.markdown(f"**카테고리:** {source.get('category', 'N/A')}")
+                with st.expander(f"📖 {source.get('title', 'Unknown')}"):
+                    st.markdown(f"**참조 문서:** {source.get('raw', 'N/A')}")
             
             # Metadata
             col_m1, col_m2 = st.columns(2)
@@ -379,7 +379,7 @@ def main():
         col_chart1, col_chart2 = st.columns(2)
         
         with col_chart1:
-            st.markdown("### 리스크 분포")
+            st.markdown("### 리스크 탐지 결과 분포")
             risk_data = metrics.get("risk_distribution", {"LOW": 0, "MEDIUM": 0, "HIGH": 0})
             
             fig = px.pie(
@@ -390,8 +390,9 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
         
         with col_chart2:
-            st.markdown("### 응답 시간 분포")
-            latency = metrics.get("latency", {}).get("total", {})
+            st.markdown("### RAG 응답 시간 분포")
+            print(metrics)
+            latency = metrics.get("latency", {}).get("rag", {})
             
             fig = go.Figure(data=[
                 go.Bar(
