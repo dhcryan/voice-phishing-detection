@@ -195,7 +195,9 @@ def get_rag():
                 llm_model=settings.LLM_MODEL
             )
         except Exception as e:
+            import traceback
             print(f"Warning: RAG initialization failed: {e}")
+            traceback.print_exc()
             return None
     return state.rag_system
 
@@ -376,6 +378,8 @@ async def query_legal_guidance(request: RAGQueryRequest):
             detection_summary=request.detection_summary,
             top_k=request.top_k
         )
+
+        print(response)
         
         answer = response.answer
         sources = response.sources

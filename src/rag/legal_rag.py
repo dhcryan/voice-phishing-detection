@@ -9,9 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 import logging
 import hashlib
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
-
+load_dotenv(verbose=True)
 
 @dataclass
 class Document:
