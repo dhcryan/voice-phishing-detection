@@ -28,7 +28,8 @@ class RetrievalResult:
     """Result from document retrieval"""
     documents: List[Document]
     query: str
-    scores: List[float]
+    # scores: List[float]
+    metas: List[dict]
     total_tokens: int
 
 
@@ -415,6 +416,28 @@ class LegalRAG:
         temperature: float = 0.1
     ):
         self.vector_store = vector_store
+
+        from langchain_community.vectorstores import Chroma
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from chromadb.utils import embedding_functions
+        from src.config import settings
+        import chromadb
+        import os, chromadb
+
+        
+        self.embedding_fn = embedding_functions.OpenAIEmbeddingFunction(
+            api_key=settings.OPENAI_API_KEY,
+            model_name=settings.RAG_EMBEDDING_MODEL
+        )
+
+        persist_dir = os.path.abspath("./data/chromadb")
+        self.client = chromadb.PersistentClient(path=persist_dir)
+
+        self.collection = self.client.get_collection(
+            name=settings.RAG_COLLECTION_NAME,
+            embedding_function=self.embedding_fn
+        )
+
         self.llm_model = llm_model
         self.temperature = temperature
         self.openai_client = None
@@ -434,16 +457,26 @@ class LegalRAG:
         """Retrieve relevant documents"""
         import tiktoken
         
-        documents, scores = self.vector_store.search(query, top_k)
-        
+        # documents, scores = self.vector_store.search(query, top_k)
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=20
+        )
+        documents = results["documents"][0]
+        print("??")
+        print(results["distances"])
+        # print(results["documents"][0])
+        # print(results["documents"][0][0])
+        print("??")
         # Count tokens
         enc = tiktoken.encoding_for_model(self.llm_model)
-        total_tokens = sum(len(enc.encode(doc.content)) for doc in documents)
-        
+        total_tokens = sum(len(enc.encode(doc)) for doc in documents)
+
         return RetrievalResult(
-            documents=documents,
+            documents=results["documents"][0],
             query=query,
-            scores=scores,
+            # scores=scores,
+            metas=results["metadatas"][0],
             total_tokens=total_tokens
         )
     
@@ -508,18 +541,18 @@ class LegalRAG:
         
         # Retrieve
         retrieval_result = self.retrieve(question, top_k)
-        
+
         # Build context
         context_parts = []
         sources = []
         
-        for doc, score in zip(retrieval_result.documents, retrieval_result.scores):
-            context_parts.append(f"### {doc.metadata.get('title', doc.id)}\n{doc.content}")
+        for doc, meta in zip(retrieval_result.documents, retrieval_result.metas):
+            context_parts.append(f"### {f"{meta["law_name_ko"]}"}\n{doc}")
             sources.append({
-                "id": doc.id,
-                "title": doc.metadata.get("title", doc.id),
-                "category": doc.metadata.get("category", "unknown"),
-                "relevance_score": score
+                "id": meta.get("source_record_id"),
+                "title": meta.get("law_name_ko"),
+                "article_title": meta.get("article_title", "unknown"),
+                # "relevance_score": score
             })
         
         context = "\n\n".join(context_parts)
@@ -541,7 +574,6 @@ class LegalRAG:
             generation_tokens=gen_tokens,
             total_latency_ms=total_latency
         )
-
 
 def create_rag_system(
     docs_path: str = "data/legal_docs",
