@@ -19,7 +19,7 @@ python crawl_law_for_rag.py \
   --query 계좌정지 \
   --out law_rag_voicephishing.jsonl \
   --max-pages 3 \
-  --oc jhw0714
+  --oc (본인 국가법령정보 API oc)
 """
 
 import os
