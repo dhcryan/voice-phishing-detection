@@ -1,11 +1,12 @@
 """
-LLM Service with Langfuse Monitoring
+LLM Service with Langfuse Monitoring and LangSmith Tracing
 """
 import os
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
 from langfuse.openai import OpenAI as LangfuseOpenAI
 from langfuse import Langfuse
+from langsmith.wrappers import wrap_openai
 from src.config import settings
 import logging
 
@@ -31,6 +32,18 @@ class LLMService:
             self.client = OpenAI(api_key=self.api_key)
             self.langfuse = None
             logger.warning("Langfuse keys not found. Monitoring disabled.")
+            
+        # Initialize LangSmith Tracing if enabled
+        if settings.LANGCHAIN_TRACING_V2.lower() == "true" and settings.LANGCHAIN_API_KEY:
+            os.environ["LANGCHAIN_TRACING_V2"] = "true"
+            os.environ["LANGCHAIN_ENDPOINT"] = settings.LANGCHAIN_ENDPOINT
+            os.environ["LANGCHAIN_API_KEY"] = settings.LANGCHAIN_API_KEY
+            os.environ["LANGCHAIN_PROJECT"] = settings.LANGCHAIN_PROJECT
+            
+            # Wrap the client with LangSmith wrapper
+            # Note: If using Langfuse client, we wrap it as well.
+            self.client = wrap_openai(self.client)
+            logger.info("LangSmith tracing enabled.")
 
     def generate_explanation(self, 
                              detection_result: Dict[str, Any], 

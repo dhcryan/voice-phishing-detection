@@ -84,3 +84,10 @@ htmlcov/
 tmp/
 temp/
 *.tmp
+
+*.jsonl
+*.csv
+*.h5
+*.ckpt
+*.pth
+*.json

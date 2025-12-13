@@ -175,7 +175,7 @@ def get_detector():
             from src.detection import get_detector
             state.detector = get_detector(
                 model_type=settings.DETECTION_MODEL_TYPE,
-                device="cuda"
+                device="cpu"
             )
         except Exception as e:
             print(f"Warning: Detector initialization failed: {e}")

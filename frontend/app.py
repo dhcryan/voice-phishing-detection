@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 # API endpoint
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_URL", "http://localhost:8001")
 
 # Custom CSS
 st.markdown("""

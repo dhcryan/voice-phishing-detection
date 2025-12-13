@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     LANGFUSE_SECRET_KEY: str = Field(default="")
     LANGFUSE_HOST: str = Field(default="https://cloud.langfuse.com")
     
+    # === LangSmith Tracing ===
+    LANGCHAIN_TRACING_V2: str = Field(default="false")
+    LANGCHAIN_ENDPOINT: str = Field(default="https://api.smith.langchain.com")
+    LANGCHAIN_API_KEY: str = Field(default="")
+    LANGCHAIN_PROJECT: str = Field(default="voice-phishing-detection")
+    
     # === RAG Settings ===
     RAG_VECTOR_DB_PATH: str = Field(default="data/chromadb")
     RAG_COLLECTION_NAME: str = Field(default="legal_docs")
