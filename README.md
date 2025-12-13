@@ -56,6 +56,32 @@
 
 ---
 
+## 🧠 탐지 모델 상세
+
+본 시스템은 다양한 아키텍처의 최신 딥러닝 모델을 활용하여 정교한 가짜 음성 탐지를 수행합니다.
+
+### 1. AASIST (Audio Anti-Spoofing using Integrated Spectro-Temporal Graph Attention Networks)
+- **특징**: 스펙트럼(주파수)과 시간적 특징을 동시에 고려하는 그래프 어텐션 네트워크(GAT) 기반 모델입니다.
+- **원리**: 음성 신호를 그래프 구조로 모델링하여, 시간적 흐름과 주파수 대역 간의 복잡한 상호작용을 분석합니다. 특히 합성된 음성에서 나타나는 미세한 아티팩트(Artifact)를 잡아내는 데 탁월합니다.
+- **용도**: 최신 SOTA(State-of-the-Art)급 성능을 보여주는 메인 탐지 모델로 사용됩니다.
+
+### 2. RawNet2
+- **특징**: 전처리된 스펙트로그램이 아닌, **Raw Waveform(원시 파형)**을 직접 입력으로 사용하는 End-to-End 모델입니다.
+- **원리**: Sinc-convolution 레이어를 사용하여 사람이 듣기 힘든 주파수 대역의 미세한 변조 흔적을 학습합니다. 전처리 과정에서의 정보 손실을 최소화하여 탐지 성능을 높입니다.
+- **용도**: 전처리 과정 없이 빠른 추론이 필요하거나, 파형 자체의 이상 징후를 포착할 때 유용합니다.
+
+### 3. ECAPA-TDNN (Emphasized Channel Attention, Propagation and Aggregation in TDNN)
+- **특징**: 화자 인식(Speaker Verification) 분야에서 널리 쓰이는 모델을 안티스푸핑에 적용했습니다.
+- **원리**: 채널 어텐션(Channel Attention) 메커니즘을 통해 중요한 채널의 특징을 강조하고, 다중 스케일의 특징을 통합(Aggregation)하여 분석합니다.
+- **용도**: 목소리의 고유한 성문(Voiceprint) 특징이 변조되었는지 확인하는 데 강점이 있습니다.
+
+### 4. Wav2Vec2-VIB (Variational Information Bottleneck)
+- **특징**: 대규모 음성 데이터로 사전 학습된(Pre-trained) Wav2Vec 2.0 모델에 VIB를 결합한 형태입니다.
+- **원리**: Wav2Vec 2.0이 추출한 풍부한 음성 표현(Representation)에서, VIB를 통해 불필요한 정보는 버리고 가짜/진짜 판별에 핵심적인 정보만을 압축하여 사용합니다.
+- **용도**: 적은 양의 데이터로도 높은 일반화 성능을 기대할 수 있으며, 다양한 공격 유형에 강건합니다.
+
+---
+
 ## 🏗 시스템 아키텍처
 
 ```
@@ -213,14 +239,16 @@ voice-phishing-detection/
 │   │   └── watermark.py     # AudioSeal 워터마크 탐지
 │   ├── rag/                  # 법률 RAG 시스템
 │   │   ├── __init__.py
-│   │   └── legal_rag.py     # 문서 로드, 벡터 검색, 생성
-│   ├── scoring/              # 리스크 스코어링
+│   │   └── engine.py        # ChromaDB 벡터 검색 엔진
+│   ├── llm/                  # LLM 서비스
 │   │   ├── __init__.py
-│   │   └── risk_scorer.py   # 멀티시그널 융합
+│   │   └── service.py       # OpenAI & Langfuse 연동
+│   ├── analysis/             # 분석 및 스코어링
+│   │   ├── __init__.py
+│   │   └── risk.py          # 리스크 스코어링 로직
 │   ├── utils/                # 유틸리티
 │   │   ├── __init__.py
-│   │   ├── monitoring.py    # Langfuse 연동
-│   │   └── security.py      # 보안 (인젝션 탐지, PII 필터)
+│   │   └── monitoring.py    # 모니터링 도구
 │   └── config.py             # 설정 및 프롬프트
 ├── frontend/
 │   └── app.py                # Streamlit UI
@@ -353,15 +381,24 @@ source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 ```
 
-### 2. 모델 학습 (Quick Start)
+### 2. 모델 설정 (Model Setup)
 
-실제 데이터셋(ASVspoof 등)이 없는 경우, 합성 데이터를 생성하여 빠르게 모델을 학습시킬 수 있습니다.
+본 시스템은 두 가지 방식으로 탐지 모델을 운영할 수 있습니다.
 
+**옵션 A: 사전 학습된 고성능 모델 사용 (권장)**
+AASIST, RawNet2 등 최신 논문의 사전 학습된 가중치(Pre-trained Weights)를 사용하여 높은 정확도를 제공합니다.
+- **원리**: 대규모 데이터셋(ASVspoof 등)으로 미리 학습된 모델을 가져와 사용하므로, 별도의 학습 과정 없이 바로 고성능 탐지가 가능합니다.
+- **설정**: `src/config.py`에서 `DETECTION_MODEL_TYPE`을 `aasist`, `rawnet2` 등으로 변경하여 사용합니다.
+
+**옵션 B: 경량화 모델 직접 학습 (Quick Start)**
+외부 가중치 다운로드 없이, 간단한 CNN 모델을 즉석에서 학습시켜 시스템 작동을 테스트합니다.
 ```bash
-# 합성 데이터 생성 및 Simple CNN 모델 학습
 python scripts/quick_train.py
 ```
-위 명령어를 실행하면 `checkpoints/simple_detector_best.pt` 모델이 생성됩니다.
+
+> **❓ 자주 묻는 질문: 이미 훈련된 모델이 있는데 왜 데이터를 다운로드하나요?**
+> 1. **법률 데이터 (RAG용)**: 탐지 모델 학습용이 아니라, AI가 법률 상담을 할 때 참조할 **지식 베이스(Knowledge Base)**를 구축하기 위함입니다.
+> 2. **오디오 데이터 (선택사항)**: 사전 학습된 모델의 성능을 검증(Evaluation)하거나, 새로운 유형의 보이스피싱에 맞춰 미세 조정(Fine-tuning)할 때만 필요합니다.
 
 ### 3. 서버 실행
 
@@ -374,8 +411,52 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8001
 # 2. 웹 인터페이스 실행 (Port 8501)
 # 새 터미널에서 실행하세요
 export API_URL="http://localhost:8001"
-streamlit run frontend/app.py --server.port 8501
+streamlit run frontend/app.py --server.port 8501 --server.fileWatcherType none
 ```
+
+> **참고**: `inotify watch limit reached` 에러가 발생할 경우 `--server.fileWatcherType none` 옵션을 추가하여 파일 감시 기능을 끄고 실행하세요.
+
+### 4. RAG 및 LLM 설정 (선택 사항)
+
+법률 자문 및 상세 분석 기능을 사용하려면 추가 설정이 필요합니다.
+
+#### 4.1. API 키 설정
+`.env` 파일을 생성하거나 `src/config.py`를 수정하여 API 키를 입력하세요.
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export LANGFUSE_PUBLIC_KEY="pk-..."
+export LANGFUSE_SECRET_KEY="sk-..."
+```
+
+#### 4.2. 법률 데이터베이스 구축
+기본 제공되는 스크립트를 실행하여 법률 벡터 데이터베이스를 생성합니다.
+
+**옵션 A: 샘플 데이터 사용 (기본)**
+별도의 데이터 다운로드 없이 기본 내장된 핵심 법령(형법, 통신사기피해환급법 등)을 사용합니다.
+```bash
+python scripts/build_rag_db.py
+```
+
+**옵션 B: 실제 법령 데이터 사용 (권장)**
+1. [Open Law (열린법령)](https://open.law.go.kr/) 또는 [AI Hub](https://aihub.or.kr/)에서 법률 데이터를 다운로드합니다.
+2. 다운로드한 데이터를 아래와 같은 JSON 형식으로 변환하여 `data/raw/laws.json`에 저장합니다.
+    ```json
+    [
+      {
+        "id": "law_1",
+        "text": "제1조(목적) 이 법은...",
+        "metadata": {"source": "형법", "article": "제1조"}
+      },
+      ...
+    ]
+    ```
+3. 스크립트를 실행하면 자동으로 해당 파일을 로드하여 DB를 구축합니다.
+    ```bash
+    python scripts/build_rag_db.py
+    ```
+
+이 명령어를 실행하면 `data/chromadb` 폴더에 벡터 DB가 생성되며, 이후 서버 실행 시 자동으로 로드됩니다.
 
 ---
 
@@ -385,9 +466,22 @@ streamlit run frontend/app.py --server.port 8501
 
 ### 1. 필수 데이터셋 다운로드
 다음 데이터셋을 다운로드하여 `data/raw/` 폴더에 위치시켜야 합니다.
-- **ASVspoof 2019 LA**: [다운로드 링크](https://datashare.ed.ac.uk/handle/10283/3336)
-- **WaveFake**: [Kaggle 링크](https://www.kaggle.com/datasets/testing123/wavefake)
-- **In-the-wild**: 실제 보이스피싱 사례 데이터
+
+#### 🎙️ 음성 탐지 데이터셋
+- **ASVspoof 2019 LA**: [University of Edinburgh DataShare](https://datashare.ed.ac.uk/handle/10283/3336)
+    - 설명: 안티스푸핑 연구의 표준 벤치마크 데이터셋 (Logical Access)
+    - 파일명: `LA.zip`
+- **WaveFake**: [Zenodo Repository](https://zenodo.org/record/5642694)
+    - 설명: 최신 TTS/VC 아키텍처로 생성된 딥페이크 오디오 (공식 데이터셋)
+- **In-the-wild (실제 보이스피싱)**: [금융감독원 보이스피싱 지킴이](https://www.fss.or.kr/fss/bbs/B0000203/list.do?menuNo=200690)
+    - 설명: '그놈 목소리' 등 실제 사기범의 목소리 샘플 (체험관/피해사례)
+
+#### ⚖️ 법률 RAG 데이터셋
+- **국가법령정보센터 Open API**: [Open Law (열린법령)](https://open.law.go.kr/)
+    - 설명: 대한민국 현행 법령 및 판례 데이터 API 신청 및 가이드
+    - 주요 키워드: `형법`, `전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법`, `전자금융거래법`
+- **AI Hub 법률 텍스트**: [법률 규정 (판결서 약관 등) 텍스트 분석 데이터](https://aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&aihubDataSe=realm&dataSetSn=580)
+    - 설명: 법률 질의응답 및 요약 모델 학습용 데이터
 
 ### 2. 추가 개발 필요 사항
 - [ ] **실제 데이터 학습**: `scripts/train_model.py`를 사용하여 대규모 데이터셋 학습 수행
