@@ -101,8 +101,8 @@
 │ Detection│  │   Risk    │  │  Legal RAG │  │  Langfuse   │
 │ Models   │  │  Scorer   │  │   System   │  │  Monitoring │
 │ ──────── │  │ ───────── │  │ ────────── │  │ ─────────── │
-│ AASIST   │  │ Multi-sig │  │ FAISS/     │  │ Traces      │
-│ RawNet2  │  │ fusion    │  │ ChromaDB   │  │ Generations │
+│ AASIST   │  │ Multi-sig │  │ ChromaDB   │  │ Traces      │
+│ RawNet2  │  │ fusion    │  │            │  │ Generations │
 │ ECAPA    │  │           │  │            │  │ Metrics     │
 └──────────┘  └───────────┘  └────────────┘  └─────────────┘
        │              │               │              │
@@ -123,6 +123,17 @@
 - Python 3.10+
 - CUDA 지원 GPU (선택사항, CPU도 가능)
 - OpenAI API 키
+- **FFmpeg** (오디오 처리를 위해 필수)
+
+> **🔊 FFmpeg 설치 가이드**
+> - **Windows**: [공식 바이너리](https://ffmpeg.org/download.html) 다운로드 후 PATH 설정 또는 `conda install -c conda-forge ffmpeg`
+> - **Ubuntu**: `sudo apt install ffmpeg`
+> - **macOS**: `brew install ffmpeg`
+>
+> **설치 확인**:
+> ```bash
+> ffmpeg -version
+> ```
 
 ### 1. 저장소 클론 및 환경 설정
 
@@ -282,7 +293,7 @@ voice-phishing-detection/
 - **OpenAI API**: 임베딩 및 LLM
 
 ### RAG
-- **FAISS / ChromaDB**: 벡터 데이터베이스
+- **ChromaDB**: 벡터 데이터베이스
 - **LangChain**: RAG 파이프라인
 
 ### Frontend
@@ -438,23 +449,25 @@ export LANGFUSE_SECRET_KEY="sk-..."
 python scripts/build_rag_db.py
 ```
 
-**옵션 B: 실제 법령 데이터 사용 (권장)**
-1. [Open Law (열린법령)](https://open.law.go.kr/) 또는 [AI Hub](https://aihub.or.kr/)에서 법률 데이터를 다운로드합니다.
-2. 다운로드한 데이터를 아래와 같은 JSON 형식으로 변환하여 `data/raw/laws.json`에 저장합니다.
-    ```json
-    [
-      {
-        "id": "law_1",
-        "text": "제1조(목적) 이 법은...",
-        "metadata": {"source": "형법", "article": "제1조"}
-      },
-      ...
-    ]
-    ```
-3. 스크립트를 실행하면 자동으로 해당 파일을 로드하여 DB를 구축합니다.
-    ```bash
-    python scripts/build_rag_db.py
-    ```
+**옵션 B: 실제 법령 데이터 크롤링 및 사용 (권장)**
+국가법령정보센터 Open API를 사용하여 최신 법령 데이터를 직접 수집할 수 있습니다.
+
+1. **법령 데이터 크롤링**
+   `data/lawopendata/crawl_law_for_rag.py` 스크립트를 사용하여 관련 법령을 수집합니다.
+   (국가법령정보센터 Open API ID가 필요합니다)
+
+   ```bash
+   cd data/lawopendata
+   python crawl_law_for_rag.py --oc <YOUR_OPEN_API_ID> --out law_rag_voicephishing.jsonl
+   cd ../..
+   ```
+
+2. **데이터베이스 구축**
+   수집된 데이터를 기반으로 RAG 데이터베이스를 구축합니다. 스크립트는 자동으로 `data/lawopendata/law_rag_voicephishing.jsonl` 파일을 감지합니다.
+
+   ```bash
+   python scripts/build_rag_db.py
+   ```
 
 이 명령어를 실행하면 `data/chromadb` 폴더에 벡터 DB가 생성되며, 이후 서버 실행 시 자동으로 로드됩니다.
 
@@ -485,5 +498,5 @@ python scripts/build_rag_db.py
 
 ### 2. 추가 개발 필요 사항
 - [ ] **실제 데이터 학습**: `scripts/train_model.py`를 사용하여 대규모 데이터셋 학습 수행
-- [ ] **RAG 벡터 DB 구축**: 법률 문서 데이터베이스 구축 및 임베딩 (ChromaDB/FAISS)
+- [x] **RAG 벡터 DB 구축**: 법률 문서 데이터베이스 구축 및 임베딩 (ChromaDB)
 - [ ] **모델 고도화**: RawNet2, AASIST 모델의 하이퍼파라미터 튜닝
