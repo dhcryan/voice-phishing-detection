@@ -169,12 +169,11 @@ def main():
                 
                 risk_class = f"risk-{risk_level.lower()}"
                 emoji = {"LOW": "✅", "MEDIUM": "⚠️", "HIGH": "🚨"}.get(risk_level, "❓")
-                
                 st.markdown(f"""
                 <div class="{risk_class}">
-                    <h2>{emoji} {risk_label}</h2>
-                    <p><strong>리스크 점수:</strong> {risk_score:.1%}</p>
-                    <p><strong>가짜 음성 확률:</strong> {result.get('fake_probability', 0):.1%}</p>
+                    <h2>{emoji} <span style='color:black'>{risk_label}</span></h2>
+                    <p><span style='color:black'><strong>리스크 점수:</strong> {risk_score:.1%}</span></p>
+                    <p><span style='color:black'><strong>가짜 음성 확률:</strong> {result.get('fake_probability', 0):.1%}</span></p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -395,7 +394,6 @@ def main():
         
         with col_chart2:
             st.markdown("### RAG 응답 시간 분포")
-            print(metrics)
             latency = metrics.get("latency", {}).get("rag", {})
             
             fig = go.Figure(data=[

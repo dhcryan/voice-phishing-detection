@@ -100,7 +100,7 @@
 ┌──────────┐  ┌───────────┐  ┌────────────┐  ┌─────────────┐
 │ Detection│  │   Risk    │  │  Legal RAG │  │  Langfuse   │
 │ Models   │  │  Scorer   │  │   System   │  │  Monitoring │
-│ ────────│  │ ─────────│  │ ──────────│  │ ───────────│
+│ ──────── │  │ ───────── │  │ ────────── │  │ ─────────── │
 │ AASIST   │  │ Multi-sig │  │ FAISS/     │  │ Traces      │
 │ RawNet2  │  │ fusion    │  │ ChromaDB   │  │ Generations │
 │ ECAPA    │  │           │  │            │  │ Metrics     │

@@ -463,11 +463,7 @@ class LegalRAG:
             n_results=20
         )
         documents = results["documents"][0]
-        print("??")
-        print(results["distances"])
-        # print(results["documents"][0])
-        # print(results["documents"][0][0])
-        print("??")
+
         # Count tokens
         enc = tiktoken.encoding_for_model(self.llm_model)
         total_tokens = sum(len(enc.encode(doc)) for doc in documents)
@@ -531,9 +527,6 @@ class LegalRAG:
             "context": context,
             "query": query
         })
-        print("@"*88)
-        print(chain_result.content)
-        print("@"*88)
         
         answer = chain_result.content
         tokens_used = chain_result.response_metadata["token_usage"]["total_tokens"]

@@ -378,8 +378,6 @@ async def query_legal_guidance(request: RAGQueryRequest):
             detection_summary=request.detection_summary,
             top_k=request.top_k
         )
-
-        print(response)
         
         answer = response.answer
         sources = response.sources
