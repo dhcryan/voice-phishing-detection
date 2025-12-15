@@ -10,6 +10,7 @@ from src.utils.chunking import split_record_text_only
 
 # Sample legal data related to Voice Phishing (Telecommunications-based Financial Fraud)
 # In a real scenario, this would be fetched from the National Law Information Center API
+# 밑에 코드 필요없음 어차피 외부 데이터 불러오니까
 LAW_DATA = [
     {
         "id": "criminal_act_347",

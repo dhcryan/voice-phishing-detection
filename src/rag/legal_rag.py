@@ -547,7 +547,7 @@ class LegalRAG:
         
         # Retrieve
         retrieval_result = self.retrieve(question, top_k)
-
+        # print(retrieval_result['promulgation_date'])
         # Build context
         context_parts = []
         sources = []
